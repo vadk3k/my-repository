@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: |
+    Create Static Kittens carousel website
+# Parameters:
+    
+Resources:
+
+    WebSecGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: Allow ssh and http from the internet  
+        GroupName: web-sec-group
+        SecurityGroupIngress: 
+          - IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            CidrIp: "0.0.0.0/0"
+          - IpProtocol: tcp
+            FromPort: 22
+            ToPort: 22
+            CidrIp: "0.0.0.0/0" 
+
+    WebServer:
+      Type: AWS::EC2::Instance
+      Properties:
+        Tags: 
+          - Key: Name
+            Value: angineh-kittens-server
+        ImageId: ami-053a45fff0a704a47
+        InstanceType: t2.micro
+        KeyName: angineh-aws-18-keypair
+        SecurityGroupIds: 
+          - Fn::GetAtt: WebSecGroup.GroupId
+        UserData: 
+            Fn::Base64:
+                |
+                    #!/bin/bash -x
+                    yum update -y
+                    yum install httpd -y
+                    cd /var/www/html
+                    FOLDER="https://raw.githubusercontent.com/vadk3k/my-repository/refs/heads/main/101-kittens-carousel-static-website-ec2/static-web"
+                    wget ${FOLDER}/index.html
+                    wget ${FOLDER}/cat0.jpg
+                    wget ${FOLDER}/cat1.jpg
+                    wget ${FOLDER}/cat2.jpg
+                    systemctl start httpd
+                    systemctl enable httpd      
+                      
+Outputs:
+
+    WebsiteUrl:
+      Description: Kittens carousel website URL
+      Value: !Join ["", ["http://", Fn::GetAtt: WebServer.PublicDnsName ]]
+      
+   
